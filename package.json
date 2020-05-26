@@ -1,6 +1,6 @@
 {
   "name": "localedit",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "",
   "main": "edit.js",
   "scripts": {
@@ -10,5 +10,8 @@
   "license": "ISC",
   "dependencies": {
     "fast-glob": "^3.2.2"
+  },
+  "devDependencies": {
+    "fs-extra": "^9.0.0"
   }
 }
