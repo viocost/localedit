@@ -79,16 +79,16 @@ let requestedLanguages = []
 
 const LANG_FORMAT = "{{lang}}";
 const NS_FORMAT = "{{ns}}";
-let fileFormat = "json";
+let fileFormat = ".json";
 
 let langDirIndexOffset = null
 let LANG_IS_DIR = false
 
-const testPath = `**/locales/{{lang}}/{{ns}}.${fileFormat}`
 
 parseArgs();
 
 
+// processes all path tepmlates
 function runSync(pathTemplates, masterLang, emptyStringOnMissing = true, languages) {
 
     //Splitting template by components
@@ -122,7 +122,9 @@ function runSync(pathTemplates, masterLang, emptyStringOnMissing = true, languag
 
 }
 
-function sync(tmplt, masterLang, emptyStringOnMissing, languages){
+// Only for {{lang}} === dirname mode with namespaces
+// Given tmplt path returns map of languageCode => path
+function getLangDirPathMap(tmplt,  requestedLanguages){
 
     let pathElements = tmplt.split(path.sep).filter(i => i);
 
@@ -133,33 +135,73 @@ function sync(tmplt, masterLang, emptyStringOnMissing, languages){
     let langDirIndexOffset = pathElements.length - langDirIndex;
 
 
-    //explicitly setting the working mode
-    LANG_IS_DIR = true
+    //Forming real glob pattern
+    pTemplate = tmplt.replace(/\{\{lang\}\}/, "**").replace(/\{\{ns\}\}/, "*");
 
-
-    pTemplate = testPath.replace(/\{\{lang\}\}/, "**").replace(/\{\{ns\}\}/, "*");
-
-
-
-    //At this point all error checks are completed. replacing placeholders
+    // Initializing map languagecode => path_to_translation_file
     let locales = {}
 
+    //getting all the paths that match glob pattern
     let rawPaths = fg.sync(pTemplate)
     let pathsSplit = rawPaths.map(p => p.split(path.sep))
 
-    Array.from(new Set(pathsSplit.map(p => {
+    //Getting existing lang codes from dir names
+    let langCodes = new Set(pathsSplit.map(p => {
+        //Extracting just language codes that are dir names
+        // Finding them by offset from the end
         return p[p.length - langDirIndexOffset]
-    }))).forEach(lang => {
+    }))
+
+    if (requestedLanguages){
+        //Merging requested languages with existing
+        for(let lang of requestedLanguages){
+            langCodes.add(lang)
+        }
+    }
+
+    //Populating lang translation files
+    Array.from(langCodes).forEach(lang => {
         locales[lang] = rawPaths.filter(rp => {
             let patt = new RegExp(`.*\/${lang}\/.*`)
             return patt.test(rp);
         })
     })
 
-    //processing
-    if (!locales.hasOwnProperty(masterLang)) {
-        throw new Error("Master language not specified or not found")
+    return locales
+}
+
+function getLangFilePathMap(tmplt,  requestedLanguages){
+
+    let pTemplate = tmplt.replace(/\{\{lang\}\}/, "*");
+
+
+    // Initializing map languagecode => path_to_translation_file
+    let locales = {}
+
+    //getting all the paths that match glob pattern
+    let rawPaths = fg.sync(pTemplate)
+
+    let pathsSplit = rawPaths.map(p => p.split(path.sep))
+
+    pathsSplit.forEach(p=>{
+        let lastEl = p[p.length-1]
+        //returning only filename before the extension assuming it is language code
+        let langCode = lastEl.substring(0, lastEl.indexOf(fileFormat));
+        locales[langCode] = path.join(...p);
+    })
+
+    for (let lang of requestedLanguages){
+        if (!locales.hasOwnProperty(lang))
+            locales[lang] = ""
     }
+
+    return locales;
+}
+
+
+
+function syncWithNamespaces(localesMap, masterLang){
+
 
     //Set of slaves languages
     const slaves = Object.keys(locales).filter(l => l !== masterLang)
@@ -193,12 +235,40 @@ function sync(tmplt, masterLang, emptyStringOnMissing, languages){
 
         }
     }
+}
 
+function syncFileMode(pathMap, masterLanguage, blankMode = true){
+    let masterLangFile = pathMap[masterLanguage];
+    let slaveLangKeys = Object.keys(pathMap).filter(lang => lang !== masterLanguage);
+
+    let masterData = JSON.parse(fs.readFileSync(masterLangFile));
+
+    let pathEls = pathMap[masterLanguage].split(path.sep);
+
+    let localesDir = path.join(...pathEls.slice(0, pathEls.length-1));
+
+    for (let lang of slaveLangKeys){
+        let derivedPath = path.join(localesDir, `${lang}.json`);
+        let slaveData = fs.existsSync(derivedPath) ? JSON.parse(fs.readFileSync(derivedPath)) :
+            {};
+
+        let synced = syncObjects(masterData, slaveData, blankMode);
+        fs.writeFileSync(derivedPath, JSON.stringify(synced, null, 2));
+    }
+
+}
+
+function syncDirMode(pathMap, masterLanguage){
 
 }
 
 
-
+//given glob path template
+// determines if {{lang}} refers to dirname or a filename
+function isLangFilename(tmplt){
+    let elements = tmplt.split(path.sep).filter(i => i);
+    return /\{\{lang\}\}/.test(elements[elements.length-1])
+}
 
 function verifyPathTemplateFormat(langPathTemplate) {
     let pattern = /(.*(?<!\{\{lang\}\})(?<!\{\{ns\}\})\/\{\{lang\}\}\/(?!\{\{lang\}\})\/?(\{\{ns\}\}|\w+)\.json|.*(?<!\{\{ns\}\})\/\{\{lang\}\}\.json)/
@@ -207,7 +277,8 @@ function verifyPathTemplateFormat(langPathTemplate) {
 
 
 
-function syncObjects(master, slaveObj) {
+function syncObjects(master = {}, slaveObj = {}, blankMode = true) {
+
     let slave = JSON.parse(JSON.stringify(slaveObj));
 
     for (let key of Object.keys(slave)) {
@@ -219,10 +290,10 @@ function syncObjects(master, slaveObj) {
             slave[key] = syncObjects(master[key], slave[key] || {})
         } else {
             if (slave[key] && slave[key] !== master[key]) {
-/k/                console.log(`${key} Already translated`);
+                //console.log(`${key} Already translated`);
                 continue
             } else {
-                slave[key] = blankMode === EMPTY_STRING ? "" : master[key];
+                slave[key] = blankMode  ? "" : master[key];
             }
         }
     }
@@ -266,5 +337,8 @@ function parseArgs() {
 
 module.exports = {
     verifyPathTemplateFormat: verifyPathTemplateFormat,
-    syncObjects: syncObjects
+    syncObjects: syncObjects,
+    getLangDirPathMap: getLangDirPathMap,
+    getLangFilePathMap: getLangFilePathMap,
+    syncFileMode: syncFileMode
 }

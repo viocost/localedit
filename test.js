@@ -1,6 +1,11 @@
 const fs = require("fs-extra")
 const path = require("path")
-const { syncObjects, verifyPathTemplateFormat } = require("./sync.js");
+const { getLangDirPathMap,
+        getLangFilePathMap,
+        syncObjects,
+        verifyPathTemplateFormat,
+        syncFileMode
+      } = require("./sync.js");
 const { isEquivalent } = require("./ObjectUtil");
 
 function assert(cond, msg = "Generic assertion"){
@@ -88,23 +93,114 @@ function testGlobVerifier(){
     console.log("Finished. \n\n");
 }
 
+function verifySync(objMaster, objSlave, objSynced, modeEmpty = true){
+
+
+    for(let key in objSynced){
+        if (!objMaster.hasOwnProperty(key)) {
+            console.log("Found properties missing in master");
+            return false;
+        }
+
+    }
+
+    for (let key in objMaster){
+        if(typeof objMaster[key] === "object"){
+            if(!(verifySync(objMaster[key], objSlave ? objSlave[key] : undefined, objSynced[key]))){
+                console.log("Nested object was not verified");
+                return false
+            }
+
+        }  else {
+            //comparing primitives
+            if (objSlave && objSlave[key] && objSlave[key] !== objMaster[key]){
+                if (objSlave[key] !== objSynced[key]) {
+                    console.log(`Translation overritten for ${objSlave[key]}, ${objSynced[key]}`);
+                    return false
+                }
+            } else {
+                res = modeEmpty ? objSynced[key] === ""  : objSynced[key] === objMaster[key];
+                if(!res) {
+                    console.log(`Missing tranlsation not written propery: ${objMaster[key]} ${objSynced[key]}`);
+                    return false;
+                }
+            }
+
+        }
+    }
+    return true;
+
+}
+
+function runSyncTest(obj1, obj2, modeBlank = true, verbose = false){
+    let synced = syncObjects(obj1, obj2, modeBlank)
+    let msg = verbose ?  `Testing sync. obj1: ${obj1 ? JSON.stringify(obj1, null, 2) : ""}, ${obj2 ? JSON.stringify(obj2, null, 2) : ""}` :
+        "Objects sync test";
+    assert(verifySync(obj1, obj2, synced, modeBlank), msg)
+}
+
 function testObjectsSync(){
-
     console.log("\nTesting Testing object sync");
-    assert(isEquivalent(testObject1, syncObjects(testObject1, {})), "Syncing with empty object")
-    assert(isEquivalent({}, syncObjects({}, testObject3)), "Syncing empty to filled object")
-    assert(!isEquivalent(testObject1, syncObjects(testObject1, testObject2)), "1 to 2")
-    assert(!isEquivalent(testObject1, syncObjects(testObject1, testObject3)), "1 to 3")
-    assert(isEquivalent(testObject2, syncObjects(testObject2, testObject3)), "2 to 3")
-
+    runSyncTest({}, {}, true)
+    runSyncTest({}, {}, false)
+    runSyncTest(testObject1, testObject2, false)
+    runSyncTest(testObject1, testObject2, true)
+    runSyncTest(testObject1)
+    runSyncTest(testObject1, testObject3, true)
+    runSyncTest(testObject1, testObject3, false)
+    runSyncTest(testObject2, testObject3, false)
+    runSyncTest(testObject2, testObject3, true)
     console.log("Finished. \n\n");
 }
 
-function testNormalMode(){
-    fs.writeFileSync(JSON.stringify(testObject1, null, 2))
 
+function testDirPathsFunction(){
+    fs.emptyDirSync("./locales")
+    fs.mkdirSync("./locales/en")
+    fs.writeFileSync("./locales/en/trans.json", JSON.stringify(testObject1))
+    fs.writeFileSync("./locales/en/namespace.json", JSON.stringify(testObject2))
+
+    let langMap  = getLangDirPathMap("**/locales/{{lang}}/{{ns}}.json", ["en", "fr", "ru", "cn"])
+
+    console.log(JSON.stringify(langMap, null, 2))
+}
+
+function testFilePathsfunction(){
+    fs.emptyDirSync("./locales")
+    fs.writeFileSync("./locales/en.json", JSON.stringify(testObject1))
+    let langMap =  getLangFilePathMap("**/locales/{{lang}}.json", ["en", "ru", "fr", "cn"]);
+
+    console.log(JSON.stringify(langMap, null, 2));
 }
 
 
+function testFileModeSync(blankMode = true){
+
+    fs.emptyDirSync("./locales")
+    fs.writeFileSync("./locales/en.json", JSON.stringify(testObject1))
+    let langMap =  getLangFilePathMap("**/locales/{{lang}}.json", ["en", "ru", "fr", "cn"]);
+
+    syncFileMode(langMap, "en", blankMode);
+
+    let paths = [
+        "./locales/ru.json",
+        "./locales/fr.json",
+        "./locales/cn.json",
+    ]
+    for (let lPath of  paths){
+        let data = JSON.parse(fs.readFileSync(lPath));
+
+        let res = verifySync(testObject1,{},  data, blankMode)
+        assert(res, lPath)
+    }
+
+
+
+}
+
 testGlobVerifier()
 testObjectsSync()
+testDirPathsFunction()
+testFilePathsfunction()
+testFileModeSync(true);
+testFileModeSync(false);
