@@ -143,10 +143,7 @@ function syncDirMode(pathMap, masterLanguage, langDirIndexOffset,  blankMode = t
                 slaveData = {}
             }
 
-            console.log("Blank mode" + blankMode);
             slaveData = syncObjects(masterData, slaveData, blankMode)
-            console.log(JSON.stringify(slaveData))
-            console.log(JSON.stringify(masterData))
             fs.writeFileSync(slaveFile, JSON.stringify(slaveData, null, 2));
 
         }
@@ -178,13 +175,12 @@ function syncObjects(master = {}, slaveObj = {}, blankMode = true) {
 
     for (let key of Object.keys(master)) {
         if (typeof master[key] === "object") {
-            slave[key] = syncObjects(master[key], slave[key] || {})
+            slave[key] = syncObjects(master[key], slave[key] || {}, blankMode)
         } else {
-            if (slave[key] && slave[key] !== master[key]) {
+            if (slave[key] && slave[key] !== master[key] && slave[key].length > 0) {
                 continue
             } else {
                 slave[key] = blankMode  ? "" : master[key];
-                console.log(`${master[key]}: ${slave[key]}`)
             }
         }
     }
@@ -197,9 +193,6 @@ function getLangDirIndexOffset(globPathTmplt){
 
     let pathElements = globPathTmplt.split(path.sep).filter(i => i);
     let langDirIndex = pathElements.indexOf(LANG_FORMAT);
-
-    //Here we assume that the path to lang files from lang dir is determined and fixed by
-    // constant offset from last path element
     return  pathElements.length - langDirIndex;
 }
 

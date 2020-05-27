@@ -35,6 +35,8 @@ let testObject1 = {
     bar: "bar"
 }
 
+
+
 let testObject2 = {
     sky: "sky4",
     header: {
@@ -65,6 +67,18 @@ let testObject3 = {
     bar: "baasdfr"
 }
 
+let testObject4 = {
+  "sky": "sdf",
+  "header": {
+    "title": "",
+    "test": "",
+    "thing": "",
+    "component": {
+      "stuff": ""
+    }
+  },
+  "bar": "dslfgj"
+}
 
 function testGlobVerifier(){
     let valid = [
@@ -108,7 +122,7 @@ function verifySync(objMaster, objSlave, objSynced, modeEmpty = true){
 
     for (let key in objMaster){
         if(typeof objMaster[key] === "object"){
-            if(!(verifySync(objMaster[key], objSlave ? objSlave[key] : undefined, objSynced[key]))){
+            if(!(verifySync(objMaster[key], objSlave ? objSlave[key] : undefined, objSynced[key], modeEmpty))){
                 console.log("Nested object was not verified");
                 return false
             }
@@ -136,9 +150,14 @@ function verifySync(objMaster, objSlave, objSynced, modeEmpty = true){
 
 function runSyncTest(obj1, obj2, modeBlank = true, verbose = false){
     let synced = syncObjects(obj1, obj2, modeBlank)
-    let msg = verbose ?  `Testing sync. obj1: ${obj1 ? JSON.stringify(obj1, null, 2) : ""}, ${obj2 ? JSON.stringify(obj2, null, 2) : ""}` :
-        "Objects sync test";
-    assert(verifySync(obj1, obj2, synced, modeBlank), msg)
+
+    if (verbose){
+        console.log(`Blank mode ${modeBlank}\n Master object: ${JSON.stringify(obj1, null, 2)}\n Slave object: ${JSON.stringify(obj2, null, 2)}
+result: ${JSON.stringify(synced, null, 2)}
+
+`);
+    }
+    assert(verifySync(obj1, obj2, synced, modeBlank), "Asserting sync object")
 }
 
 function testObjectsSync(){
@@ -169,7 +188,6 @@ function testFilePathsfunction(){
     fs.writeFileSync("./locales/en.json", JSON.stringify(testObject1))
     let langMap =  getLangFilePathMap("**/locales/{{lang}}.json", ["en", "ru", "fr", "cn"]);
 
-    console.log(JSON.stringify(langMap, null, 2));
 }
 
 
@@ -222,3 +240,4 @@ testFileModeSync(false);
 testLangIndexOffset();
 testDirModeSync()
 testDirModeSync(false)
+
