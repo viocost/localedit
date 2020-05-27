@@ -50,7 +50,9 @@ node sync.js [OPTIONS]
 
 
 -m
+    Required.
     Master language that will be used as a template for other resources
+
 
 -l
     comma separated language codes that must have reources exist. If resources
@@ -111,6 +113,11 @@ function parseArgs() {
 function main(){
     parseArgs();
 
+    if(!masterLang){
+        console.log("Error: missing master language code");
+        console.log(USAGE);
+        process.exit(1)
+    }
     for(let lPath of paths){
         if (isLangFilename(lPath)){
             let langMap =  getLangFilePathMap(lPath, requestedLanguages);

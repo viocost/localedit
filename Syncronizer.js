@@ -91,6 +91,10 @@ function getLangFilePathMap(tmplt,  requestedLanguages){
 
 
 function syncFileMode(pathMap, masterLanguage, blankMode = true){
+    if(!pathMap.hasOwnProperty(masterLanguage)) {
+        console.log("Error: Master language resources not found");
+        return;
+    }
     let masterLangFile = pathMap[masterLanguage];
     let slaveLangKeys = Object.keys(pathMap).filter(lang => lang !== masterLanguage);
 
@@ -113,7 +117,10 @@ function syncFileMode(pathMap, masterLanguage, blankMode = true){
 
 function syncDirMode(pathMap, masterLanguage, langDirIndexOffset,  blankMode = true){
 
-
+    if(!pathMap.hasOwnProperty(masterLanguage)){
+        console.log("Error: Master language resources not found");
+        return;
+    }
     //Set of slaves languages
     const slaves = Object.keys(pathMap).filter(l => l !== masterLanguage)
 
