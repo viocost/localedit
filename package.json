@@ -1,7 +1,7 @@
 {
   "name": "i18next-sync-tools",
   "version": "1.0.0",
-  "description": "",
+  "description": "A simple cli JSON locale files syncronizer.",
   "main": "sync.js",
   "scripts": {
     "test": "node ./test.js"
@@ -12,5 +12,18 @@
     "fast-glob": "^3.2.2",
     "fs-extra": "^9.0.0"
   },
-  "devDependencies": {}
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/viocost/localedit.git"
+  },
+  "homepage": "https://github.com/viocost/localedit#readme",
+  "keywords": [
+    "i18next",
+    "json",
+    "sync",
+    "power",
+    "localization",
+    "synchronize"
+  ]
 }
