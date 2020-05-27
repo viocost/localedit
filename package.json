@@ -9,9 +9,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "fast-glob": "^3.2.2"
-  },
-  "devDependencies": {
+    "fast-glob": "^3.2.2",
     "fs-extra": "^9.0.0"
-  }
+  },
+  "devDependencies": {}
 }

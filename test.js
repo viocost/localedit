@@ -4,8 +4,10 @@ const { getLangDirPathMap,
         getLangFilePathMap,
         syncObjects,
         verifyPathTemplateFormat,
-        syncFileMode
-      } = require("./sync.js");
+        syncFileMode,
+        syncDirMode,
+        getLangDirIndexOffset
+      } = require("./Syncronizer.js");
 const { isEquivalent } = require("./ObjectUtil");
 
 function assert(cond, msg = "Generic assertion"){
@@ -159,10 +161,7 @@ function testDirPathsFunction(){
     fs.mkdirSync("./locales/en")
     fs.writeFileSync("./locales/en/trans.json", JSON.stringify(testObject1))
     fs.writeFileSync("./locales/en/namespace.json", JSON.stringify(testObject2))
-
     let langMap  = getLangDirPathMap("**/locales/{{lang}}/{{ns}}.json", ["en", "fr", "ru", "cn"])
-
-    console.log(JSON.stringify(langMap, null, 2))
 }
 
 function testFilePathsfunction(){
@@ -193,9 +192,25 @@ function testFileModeSync(blankMode = true){
         let res = verifySync(testObject1,{},  data, blankMode)
         assert(res, lPath)
     }
+}
 
 
+function testDirModeSync(blankMode = true){
 
+    fs.emptyDirSync("./locales")
+    fs.mkdirSync("./locales/en")
+    fs.writeFileSync("./locales/en/trans.json", JSON.stringify(testObject1))
+    fs.writeFileSync("./locales/en/namespace.json", JSON.stringify(testObject2))
+
+    let langMap  = getLangDirPathMap("**/locales/{{lang}}/{{ns}}.json", ["en", "fr", "ru", "cn"])
+    syncDirMode(langMap, "en", 2, blankMode )
+
+    assert(1===1, "Dir sync successful");
+
+}
+
+function testLangIndexOffset(){
+    assert(getLangDirIndexOffset("**/locales/{{lang}}/{{ns}}.json") === 2, "lang index offset")
 }
 
 testGlobVerifier()
@@ -204,3 +219,6 @@ testDirPathsFunction()
 testFilePathsfunction()
 testFileModeSync(true);
 testFileModeSync(false);
+testLangIndexOffset();
+testDirModeSync()
+testDirModeSync(false)
