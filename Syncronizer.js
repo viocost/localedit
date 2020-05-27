@@ -143,8 +143,10 @@ function syncDirMode(pathMap, masterLanguage, langDirIndexOffset,  blankMode = t
                 slaveData = {}
             }
 
+            console.log("Blank mode" + blankMode);
             slaveData = syncObjects(masterData, slaveData, blankMode)
-
+            console.log(JSON.stringify(slaveData))
+            console.log(JSON.stringify(masterData))
             fs.writeFileSync(slaveFile, JSON.stringify(slaveData, null, 2));
 
         }
@@ -179,10 +181,10 @@ function syncObjects(master = {}, slaveObj = {}, blankMode = true) {
             slave[key] = syncObjects(master[key], slave[key] || {})
         } else {
             if (slave[key] && slave[key] !== master[key]) {
-                //console.log(`${key} Already translated`);
                 continue
             } else {
                 slave[key] = blankMode  ? "" : master[key];
+                console.log(`${master[key]}: ${slave[key]}`)
             }
         }
     }
@@ -210,5 +212,6 @@ module.exports = {
     getLangFilePathMap: getLangFilePathMap,
     syncFileMode: syncFileMode,
     syncDirMode: syncDirMode,
-    getLangDirIndexOffset: getLangDirIndexOffset
+    getLangDirIndexOffset: getLangDirIndexOffset,
+    isLangFilename: isLangFilename
 }
