@@ -1,13 +1,13 @@
 {
-  "name": "localedit",
-  "version": "0.0.1",
+  "name": "i18next-sync-tools",
+  "version": "1.0.0",
   "description": "",
-  "main": "edit.js",
+  "main": "sync.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node ./test.js"
   },
   "author": "",
-  "license": "ISC",
+  "license": "WTFPL",
   "dependencies": {
     "fast-glob": "^3.2.2",
     "fs-extra": "^9.0.0"

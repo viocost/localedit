@@ -8,25 +8,21 @@ const {
 
 } = require("./Syncronizer.js");
 
-// variables
-let blankMode = true
-let masterLang;
-let paths = []
-let requestedLanguages;
-
-
 const USAGE = `
 
-It is a simple cli syncronizer of JSON locale files.
-So, you can create a schema for a single language,
-and sync it over to other requested languages, so
+This is a simple cli JSON locale files syncronizer.
+It allows you to create translation schema for a single language
+and that schema will be copied over to other specified languages, so
 you would only need to fill the blanks.
 
-It would be also useful if schema changes to re-sync your json files
+It is also useful when your schema changes and you need to re-sync your json files
 
+!NOTICE:
+Current version does not support plurals. Yet.
 
 This tool was inspired by i18nex-json-sync. For my project I really
 needed a tool that would be able to handle namespaces, so I quickly made this one.
+
 
 ## Usage
 
@@ -68,9 +64,17 @@ node sync.js [OPTIONS]
     This option will put an empty string if property does not exist OR matches
     value in master language.
 
+-h
+    Print this message
 
 `
 
+
+// variables
+let blankMode = true
+let masterLang;
+let paths = []
+let requestedLanguages;
 
 function parseArgs() {
     const args = process.argv.slice(2);
