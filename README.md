@@ -13,6 +13,9 @@ It would be also useful if schema changes to re-sync your json files
 This tool was inspired by i18nex-json-sync. For my project I really
 needed a tool that would be able to handle namespaces, so I quickly made this one.
 
+!NOTICE:
+Current version does not support plurals yet
+
 ## Usage
 
 node sync.js -p path/to/locales/in/glob -m <master_language_code> [OPTIONS]
@@ -41,6 +44,8 @@ node sync.js -p path/to/locales/in/glob -m <master_language_code> [OPTIONS]
 -l 
     comma separated language codes that must have reources exist. If resources
     are not found - they will be created.
+    
+    Ex.: -l en,cn,fr,de
     
 -c 
     This option will copy the value from master language if property does not exist in
